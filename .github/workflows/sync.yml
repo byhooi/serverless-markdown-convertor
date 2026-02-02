@@ -26,29 +26,33 @@ jobs:
           // 👇 1. 设置上游仓库地址
           const upstream_repo = "xxnuo/serverless-markdown-convertor";
           
-          // 👇 2. 设置分支 (你这个仓库默认是 main)
+          // 👇 2. 设置分支
           const branch = "main"; 
 
           try {
-            // ❌ 删除了报错的 require 行，直接使用内置的 exec
-            
-            // 配置机器人身份
+            // 修正：删除了报错的 require 语句
+            // exec 工具是内置的，直接使用即可
+
+            // 配置身份
             await exec.exec("git config --global user.name 'GitHub Actions'");
             await exec.exec("git config --global user.email 'actions@github.com'");
 
-            // 拉取上游代码
+            // 添加上游并获取更新
             await exec.exec(`git remote add upstream https://github.com/${upstream_repo}.git`);
             await exec.exec("git fetch upstream");
 
             // 确保切换到 main 分支
             await exec.exec(`git checkout ${branch}`);
 
-            // 尝试合并 (这步会保留你的 sync.yml)
+            // ⚡️ 霸道合并模式
             try {
-              await exec.exec(`git merge upstream/${branch} --no-edit`);
+              console.log("尝试合并上游代码...");
+              // -X theirs: 遇到冲突时，无条件使用上游作者的版本
+              // --allow-unrelated-histories: 允许合并历史不相关的仓库
+              await exec.exec(`git merge upstream/${branch} -X theirs --allow-unrelated-histories --no-edit`);
             } catch (error) {
-              console.log("⚠️ Merge 冲突，尝试自动解决...");
-              // 这里的 throw 会被外层捕获并报告失败
+              console.error("合并依然失败，正在输出详细日志...");
+              await exec.exec("git status");
               throw error;
             }
 
